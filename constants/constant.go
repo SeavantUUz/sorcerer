@@ -1,0 +1,3 @@
+package constants
+
+const TokenContractRW = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyZWFkIjpbImNvbnRyYWN0LWV2ZW50Il0sIndyaXRlIjpbImNvbnRyYWN0LWV2ZW50Il19.NaJdJUUp5MDC_Db3EWG9OPEsj5JCS--Vect4dAr7xZ8"

@@ -1,9 +1,8 @@
 package services
 
 import (
-	"github.com/pote/philote-go"
+	"errors"
 	"github.com/sirupsen/logrus"
-	"sorcerer/constants"
 	"sorcerer/structure"
 	"sorcerer/watcher"
 	"sync"
@@ -12,8 +11,8 @@ import (
 
 type PublishService struct {
 	sync.Mutex
-	log           *logrus.Logger
-	publisher     *philote.Client
+	log *logrus.Logger
+	//publisher     *philote.Client
 	working       int32
 	stop          int32
 	workCron      *sync.Cond
@@ -22,15 +21,18 @@ type PublishService struct {
 }
 
 func NewPublishService(log *logrus.Logger, ch <-chan []*structure.Transaction) (*PublishService, error) {
-	c, err := philote.NewClient("ws://localhost:6380", constants.TokenContractRW)
-	if err != nil {
-		return nil, err
-	}
-	service := &PublishService{log: log, publisher: c}
+	service := &PublishService{}
+	service.log = log
 	service.working = 0
 	service.stop = 0
 	service.trxsChan = ch
-	service.eventWatchers = []watcher.Watcher{watcher.NewContractApplyWatcher()}
+	if contractApplyWatcher, err := watcher.NewContractApplyWatcher(log); err == nil {
+		service.eventWatchers = append(service.eventWatchers, contractApplyWatcher)
+	} else {
+		msg := "contract apply watcher initialize failed"
+		log.Error(msg)
+		return nil, errors.New(msg)
+	}
 	return service, nil
 }
 
@@ -43,11 +45,8 @@ func (s *PublishService) Start() error {
 				for _, trx := range trxs {
 					for _, eventWatcher := range s.eventWatchers {
 						if eventWatcher.Agree(trx) {
-							data := eventWatcher.Do(trx)
-							_ = s.publisher.Publish(&philote.Message{
-								Channel: eventWatcher.Channel(),
-								Data:    data,
-							})
+
+							eventWatcher.Publish(trx)
 						}
 					}
 

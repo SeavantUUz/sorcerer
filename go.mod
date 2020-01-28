@@ -7,8 +7,10 @@ require (
 	github.com/golang/protobuf v1.3.2
 	github.com/gorilla/websocket v1.4.1 // indirect
 	github.com/jinzhu/gorm v1.9.12
+	github.com/pkg/errors v0.9.1
 	github.com/pote/philote-go v0.1.0
 	github.com/sirupsen/logrus v1.4.2
+	github.com/stretchr/testify v1.2.2
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
 	google.golang.org/grpc v1.26.0
 )

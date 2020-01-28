@@ -1,9 +1,10 @@
 syntax = "proto3";
 
+option go_package = "sorcerer/prototype";
 package prototype;
 
-import "type.proto";
-import "operation.proto";
+import "prototype/type.proto";
+import "prototype/operation.proto";
 
 message operation{
     oneof op{

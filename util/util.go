@@ -2,7 +2,8 @@ package util
 
 import (
 	"encoding/hex"
-	prototype "sorcerer/goproto"
+	"google.golang.org/grpc"
+	"sorcerer/prototype"
 	"sorcerer/structure"
 	"time"
 )
@@ -58,4 +59,12 @@ func ExtractTransactions(block *prototype.SignedBlock) []*structure.Transaction 
 		trxs = append(trxs, trx)
 	}
 	return trxs
+}
+
+func Dial(target string) (*grpc.ClientConn, error) {
+	conn, err := grpc.Dial(target, grpc.WithInsecure())
+	if err != nil {
+		//logging.VLog().Error("rpc.Dial() failed: ", err)
+	}
+	return conn, err
 }

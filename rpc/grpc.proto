@@ -1,10 +1,10 @@
 syntax = "proto3";
 
-package prototype;
+package grpcpb;
 
-import "type.proto";
-import "multi_id.proto";
-import "transaction.proto";
+import "prototype/type.proto";
+import "prototype/multi_id.proto";
+import "prototype/transaction.proto";
 
 service ApiService {
     rpc QueryTableContent (GetTableContentRequest) returns (TableContentResponse) {

@@ -7,8 +7,8 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"github.com/sirupsen/logrus"
 	"sorcerer/config"
-	prototype "sorcerer/goproto"
-	"sorcerer/rpc"
+	"sorcerer/constants"
+	grpcpb "sorcerer/rpc"
 	"sorcerer/structure"
 	"sorcerer/util"
 	"sync"
@@ -30,11 +30,12 @@ type SyncService struct {
 	stop     int32
 	working  int32
 	workStop *sync.Cond
-	client   prototype.ApiServiceClient
+	client   grpcpb.ApiServiceClient
 	trxsCh   chan<- []*structure.Transaction
 }
 
-func NewSyncService(log *logrus.Logger, ch <-chan []*prototype.TransactionWrapper) (*SyncService, error) {
+//func NewSyncService(log *logrus.Logger, ch <-chan []*prototype.TransactionWrapper) (*SyncService, error) {
+func NewSyncService(log *logrus.Logger) (*SyncService, error) {
 	s := &SyncService{log: log}
 	s.db, s.stop, s.working = nil, 0, 0
 	return s, nil
@@ -78,11 +79,11 @@ func (s *SyncService) initDatabase() error {
 }
 
 func (s *SyncService) initRpc() error {
-	conn, err := rpc.Dial("localhost:8888")
+	conn, err := util.Dial(constants.Node)
 	if err != nil {
 		return err
 	}
-	client := prototype.NewApiServiceClient(conn)
+	client := grpcpb.NewApiServiceClient(conn)
 	s.client = client
 	return nil
 }
@@ -145,13 +146,13 @@ func (s *SyncService) work() {
 	s.Unlock()
 }
 
-func (s *SyncService) chainInfo() (*prototype.GetChainStateResponse, error) {
-	chainState, err := s.client.GetChainState(context.Background(), &prototype.NonParamsRequest{})
+func (s *SyncService) chainInfo() (*grpcpb.GetChainStateResponse, error) {
+	chainState, err := s.client.GetChainState(context.Background(), &grpcpb.NonParamsRequest{})
 	return chainState, err
 }
 
-func (s *SyncService) blockInfo(blockHeight uint64) (*prototype.GetSignedBlockResponse, error) {
-	request := prototype.GetSignedBlockRequest{Start: blockHeight}
+func (s *SyncService) blockInfo(blockHeight uint64) (*grpcpb.GetSignedBlockResponse, error) {
+	request := grpcpb.GetSignedBlockRequest{Start: blockHeight}
 	blockInfo, err := s.client.GetSignedBlock(context.Background(), &request)
 	return blockInfo, err
 }

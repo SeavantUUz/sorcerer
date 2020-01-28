@@ -1,8 +1,9 @@
 syntax = "proto3";
 
+option go_package = "sorcerer/prototype";
 package prototype;
 
-import "type.proto";
+import "prototype/type.proto";
 
 message account_create_operation{
     coin fee = 1;

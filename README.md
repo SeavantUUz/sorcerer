@@ -1,6 +1,6 @@
 # sorcerer
 
-A service can be used to watch events from coschain and publish them to all subscribers.
+A service can be used to watch events from [coschain](https://github.com/coschain/contentos-go) and publish them to all subscribers.
 
 It is not an official project.
 

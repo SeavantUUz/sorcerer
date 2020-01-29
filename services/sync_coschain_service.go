@@ -2,11 +2,9 @@ package services
 
 import (
 	"context"
-	"errors"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"github.com/sirupsen/logrus"
-	"sorcerer/config"
 	"sorcerer/constants"
 	grpcpb "sorcerer/rpc"
 	"sorcerer/structure"
@@ -31,13 +29,14 @@ type SyncService struct {
 	working  int32
 	workStop *sync.Cond
 	client   grpcpb.ApiServiceClient
-	trxsCh   chan<- []*structure.Transaction
+	trxsCh   chan<- *structure.Transaction
 }
 
-//func NewSyncService(log *logrus.Logger, ch <-chan []*prototype.TransactionWrapper) (*SyncService, error) {
-func NewSyncService(log *logrus.Logger) (*SyncService, error) {
+func NewSyncService(log *logrus.Logger, ch chan<- *structure.Transaction) (*SyncService, error) {
 	s := &SyncService{log: log}
 	s.db, s.stop, s.working = nil, 0, 0
+	s.trxsCh = ch
+	s.workStop = sync.NewCond(&s.Mutex)
 	return s, nil
 }
 
@@ -60,11 +59,12 @@ func (s *SyncService) Stop() error {
 		_ = s.db.Close()
 	}
 	s.db, s.stop, s.working = nil, 0, 0
+	s.log.Infoln("Sync Service Exit Success")
 	return nil
 }
 
 func (s *SyncService) initDatabase() error {
-	if db, err := gorm.Open("mysql", config.DSN); err != nil {
+	if db, err := gorm.Open("mysql", constants.DSN); err != nil {
 		return err
 	} else {
 		s.db = db
@@ -102,16 +102,24 @@ func (s *SyncService) work() {
 	if err != nil {
 		s.log.Error(err)
 	}
+	headBlockNum := chainInfo.State.Dgpo.HeadBlockNumber
 	progress := &SyncProgress{}
+	// localstorage is empty, write current info into storage
 	if s.db.Where(&SyncProgress{}).First(progress).RecordNotFound() {
-		err = errors.New("sync progress record not found")
-		s.log.Error(err)
+		progress.BlockHeight = headBlockNum
+		progress.FinishAt = time.Now()
+		tx := s.db.Begin()
+		if err = tx.Save(progress).Error; err == nil {
+			tx.Commit()
+		} else {
+			s.log.Error(err)
+			tx.Rollback()
+		}
 	}
 	if atomic.LoadInt32(&s.stop) != 0 {
 		userBreak = true
 	}
 	if err == nil {
-		headBlockNum := chainInfo.State.Dgpo.HeadBlockNumber
 		minBlockNum, maxBlockNum := progress.BlockHeight+1, headBlockNum
 		for blockNum := minBlockNum; blockNum <= maxBlockNum; blockNum++ {
 			if atomic.LoadInt32(&s.stop) != 0 {
@@ -125,10 +133,12 @@ func (s *SyncService) work() {
 			}
 			tx := s.db.Begin()
 			trxs := util.ExtractTransactions(blockInfo.Block)
-			s.trxsCh <- trxs
+			for _, trx := range trxs {
+				s.trxsCh <- trx
+			}
 			progress.BlockHeight = blockNum
 			progress.FinishAt = time.Now()
-			if err := tx.Save(progress); err == nil {
+			if err := tx.Save(progress).Error; err == nil {
 				tx.Commit()
 			} else {
 				s.log.Error(err)

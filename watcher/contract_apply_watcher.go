@@ -55,11 +55,12 @@ func (w *ContractApplyWatcher) Agree(trx *structure.Transaction) bool {
 	if contractApplyOp == nil {
 		return false
 	}
-	if contractApplyOp.Contract == "hello" && contractApplyOp.Owner.Value == "initminer" {
-		return true
-	} else {
-		return false
-	}
+	//if contractApplyOp.Contract == "hello" && contractApplyOp.Owner.Value == "initminer" {
+	//	return true
+	//} else {
+	//	return false
+	//}
+	return true
 }
 
 func (w *ContractApplyWatcher) Publish(trx *structure.Transaction) {
@@ -72,5 +73,4 @@ func (w *ContractApplyWatcher) Publish(trx *structure.Transaction) {
 	} else {
 		w.log.Errorf("Marshal %v to json failed", contractApplyOp)
 	}
-
 }

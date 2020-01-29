@@ -2,13 +2,15 @@ package services
 
 import (
 	"github.com/sirupsen/logrus"
+	"sorcerer/structure"
 	"sorcerer/util"
 	"testing"
 )
 
 func TestSyncServiceBlockInfo(t *testing.T) {
 	log := logrus.New()
-	s, err := NewSyncService(log)
+	ch := make(chan *structure.Transaction)
+	s, err := NewSyncService(log, ch)
 	if err != nil {
 		t.Error(err)
 	}
